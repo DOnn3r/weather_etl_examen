@@ -11,6 +11,8 @@ from weather_examen_pipeline.scripts.merge import merge_files
 from weather_examen_pipeline.scripts.transform import transform_to_star
 from weather_examen_pipeline.scripts.generate_indicator import generate_indicateurs
 from weather_examen_pipeline.scripts.export_to_gsheet import export_csv_to_gsheet
+from weather_examen_pipeline.scripts.merge_historical import merge_all_historic_to_csv
+from weather_examen_pipeline.scripts.export_to_gsheet import export_csv_to_gsheet
 
 
 # ==== Configuration du DAG ====
@@ -32,7 +34,7 @@ CITIES = [
 with DAG(
     'weather_etl_examen_pipeline',
     default_args=default_args,
-    schedule='@daily',
+    schedule='0 8 * * *',
     catchup=False,
     max_active_runs=1,
     tags=["weather", "etl", "openweather", "meteostat"]
@@ -104,4 +106,16 @@ with DAG(
     op_args=["data/indicateurs/indicateurs_ville.csv", "Weather_examen", "Indicateurs"]
     )
 
+    merge_historic_task = PythonOperator(
+    task_id="merge_historic_data",
+    python_callable=merge_all_historic_to_csv
+    )
+
+    export_historic_task = PythonOperator(      
+    task_id="export_historic_to_gsheet",
+    python_callable=export_csv_to_gsheet,
+    op_args=["data/processed/historical_all.csv", "Weather_examen", "Historique"]
+    )
+
     transform_task >> generate_indicateurs_task >> [export_fact_weather_task, export_indicateurs_task]
+    generate_indicateurs_task >> merge_historic_task >> export_historic_task

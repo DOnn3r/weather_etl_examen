@@ -1,6 +1,7 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
+import numpy as np
 
 def export_csv_to_gsheet(csv_path: str, sheet_name: str, tab_name: str):
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -14,16 +15,23 @@ def export_csv_to_gsheet(csv_path: str, sheet_name: str, tab_name: str):
     except gspread.SpreadsheetNotFound:
         sheet = client.create(sheet_name)
 
-    # Crée ou remplace l'onglet
+    # Supprime l'ancien onglet s'il existe
     try:
         worksheet = sheet.worksheet(tab_name)
         sheet.del_worksheet(worksheet)
-    except:
-        pass
+    except gspread.exceptions.WorksheetNotFound:
+        pass  # pas d'ancien onglet à supprimer
 
+    # Crée un nouvel onglet
     worksheet = sheet.add_worksheet(title=tab_name, rows="1000", cols="20")
 
     # Charger les données
     df = pd.read_csv(csv_path)
+
+    # Nettoyage des valeurs non JSON-compliantes
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df = df.fillna("")
+
+    # Exporter vers Google Sheets
     worksheet.update([df.columns.values.tolist()] + df.values.tolist())
-    print(f"Données exportées vers Google Sheets > {sheet_name} > {tab_name}")
+    print(f"✅ Données exportées vers Google Sheets > {sheet_name} > {tab_name}")
