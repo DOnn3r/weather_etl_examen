@@ -9,29 +9,26 @@ def export_csv_to_gsheet(csv_path: str, sheet_name: str, tab_name: str):
         "/home/donner/airflow/credentials/alien-segment-464610-h0-fc7c19d19925.json", scope)
     client = gspread.authorize(creds)
 
-    # Ouvre le Google Sheets
+    # Ouvre ou crée le Google Sheet
     try:
         sheet = client.open(sheet_name)
     except gspread.SpreadsheetNotFound:
         sheet = client.create(sheet_name)
 
-    # Supprime l'ancien onglet s'il existe
+    # Crée ou réutilise l'onglet
     try:
         worksheet = sheet.worksheet(tab_name)
-        sheet.del_worksheet(worksheet)
+        worksheet.clear()  # On vide l'onglet au lieu de le supprimer
     except gspread.exceptions.WorksheetNotFound:
-        pass  # pas d'ancien onglet à supprimer
+        worksheet = sheet.add_worksheet(title=tab_name, rows="1000", cols="20")
 
-    # Crée un nouvel onglet
-    worksheet = sheet.add_worksheet(title=tab_name, rows="1000", cols="20")
-
-    # Charger les données
+    # Charger les données CSV
     df = pd.read_csv(csv_path)
 
-    # Nettoyage des valeurs non JSON-compliantes
+    # Nettoyage des données pour compatibilité JSON
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     df = df.fillna("")
 
-    # Exporter vers Google Sheets
+    # Exporter dans la feuille
     worksheet.update([df.columns.values.tolist()] + df.values.tolist())
-    print(f"✅ Données exportées vers Google Sheets > {sheet_name} > {tab_name}")
+    print(f"Données exportées vers Google Sheets > {sheet_name} > {tab_name}")

@@ -42,4 +42,4 @@ def generate_indicateurs():
 
     resume.columns = ["ville", "temp_moyenne_moy", "nb_jours_pluvieux", "precip_total"]
     resume.to_csv(output_file, index=False)
-    print(f"✅ Indicateurs exportés vers {output_file}")
+    print(f"Indicateurs exportés vers {output_file}")

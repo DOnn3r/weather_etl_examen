@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from datetime import datetime, timedelta
 
 from weather_examen_pipeline.scripts.extract_historic import extract_historic
 
@@ -14,7 +15,8 @@ def extract_all_historic(date: str):
         return
 
     start_date = "2019-01-01"
-    end_date = "2024-12-31"
+    # Calcul de la date de fin (veille du jour actuel)
+    end_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
     for file in os.listdir(geo_dir):
         if file.startswith("geo_") and file.endswith(".csv"):
